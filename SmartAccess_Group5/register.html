@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>IoT Access Control</title>
+  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.8.2.7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 12px 20px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    #messages {
+      margin-top: 20px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      background: #f7f7f7;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>IoT Access Control</h2>
+
+  <button onclick="registerNextCard()">Register Next Card</button>
+
+  <p id="status">Ready.</p>
+
+  <h3>Live PubNub Messages</h3>
+  <div id="messages"></div>
+
+  <script>
+    const pubnub = new PubNub({
+      publishKey: "pub-c-ae5f8ca3-617c-4d1d-9ef4-d5e599c6c010",
+      subscribeKey: "sub-c-0ec174c8-16b1-46d1-8389-651b05629083",
+      userId: "web_register_button"
+    });
+
+    const ACCESS_CHANNEL = "769IoT_access";
+    const REGISTER_CHANNEL = "769IoT_register";
+
+    const CHANNELS = [
+      ACCESS_CHANNEL,
+      REGISTER_CHANNEL
+    ];
+
+    function addMessage(text) {
+      const box = document.getElementById("messages");
+      const time = new Date().toLocaleTimeString();
+
+      box.innerText += "[" + time+ "] " + text + "\n\n";
+      box.scrollTop = box.scrollHeight;
+    }
+
+    pubnub.addListener({
+      message: function(event) {
+        const channelName = event.channel;
+        const messageText = JSON.stringify(event.message, null, 2);
+
+        addMessage(
+          "Channel: "+ channelName + "\n" + messageText
+        );
+      },
+
+      status: function(statusEvent) {
+        console.log(statusEvent);
+
+        if (statusEvent.category === "PNConnectedCategory") {
+          document.getElementById("status").innerText =
+            "Connected to PubNub channels.";
+        }
+      }
+    });
+
+    pubnub.subscribe({
+      channels: CHANNELS
+    });
+
+    addMessage("Subscribed to: " + CHANNELS.join(", "));
+
+    function registerNextCard() {
+      const message = {
+        msg_type: "command",
+        command: "register_next_card",
+        source: "web",
+        time: new Date().toISOString()
+      };
+
+      pubnub.publish({
+        channel: REGISTER_CHANNEL,
+        message: message
+      }).then(() => {
+        document.getElementById("status").innerText =
+          "Register command sent. Scan the next card.";
+
+        addMessage(
+          "Command sent to " + REGISTER_CHANNEL + ": register_next_card"
+        );
+      }).catch((error) => {
+        document.getElementById("status").innerText =
+          "Failed to send register command.";
+
+        console.log(error);
+        addMessage("Failed to send register command.");
+      });
+    }
+  </script>
+</body>
+</html>
