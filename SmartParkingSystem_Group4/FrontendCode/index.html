@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Parking System</title>
+
+<style>
+    :root {
+        --available: #16a34a;
+        --occupied: #dc2626;
+        --bg: #f4f6f8;
+        --text: #111827;
+        --muted: #6b7280;
+        --panel: #ffffff;
+        --border: #e5e7eb;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+
+        margin: 0 10px;   /* small horizontal margin */
+    }
+
+    /* HEADER */
+    .header {
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        padding: 18px 24px;
+        text-align: center;
+    }
+
+    .title {
+        font-size: 36px;
+        font-weight: 900;
+        letter-spacing: 1px;
+    }
+
+    .subtitle {
+        font-size: 20px;
+        color: var(--muted);
+        margin-top: 4px;
+    }
+
+    .live {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        background: #22c55e;
+        border-radius: 50%;
+        animation: blink 1.2s infinite;
+    }
+
+    @keyframes blink {
+        50% { opacity: 0.3; }
+    }
+
+    /* STATUS BAR */
+    .status-bar {
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        text-align: center;
+        padding: 14px;
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    /* OPERATION MESSAGE */
+    .operation {
+        background: white;
+        /* margin: 0px 10px; */
+        padding: 14px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .operation span {
+        color: #22c55e;
+    }
+
+    /* MAIN AREA */
+    .main {
+        flex: 1;
+        padding: 50px 450px;
+    }
+
+    /* TABLE LAYOUT */
+    .parking-table {
+        width: 100%;
+         border-collapse: collapse;
+        /* border: 1px solid black; */
+        table-layout: fixed;
+        height: 100%;
+       
+    }
+
+    .parking-table td {
+        border: 24px solid black;
+        /* padding: 30px; */
+        text-align: center;
+        height: 300px;
+        vertical-align: middle;
+        /* border-radius: 20px; */
+    }
+
+    /* SPOT BOXES */
+    .spot {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-weight: 800;
+        transition: 0.2s ease;
+        height: 100%;
+        /* border-radius: 12px; */
+    }
+
+    /* .spot:hover {
+        transform: scale(1.02);
+    } */
+
+    .spot-title {
+        font-size: 28px;
+        letter-spacing: 1px;
+        opacity: 0.9;
+    }
+
+    .status {
+        margin-top: 14px;
+        font-size: 32px;
+        letter-spacing: 2px;
+    }
+
+    .available {
+        background: var(--available);
+    }
+
+    .occupied {
+        background: var(--occupied);
+    }
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="title">SMART PARKING SYSTEM</div>
+    <div class="subtitle">Live Parking Monitoring Dashboard</div>
+
+    <div class="live">
+        <div class="dot"></div>
+        <span id="date"></span>, <span id="time"></span>
+    </div>
+</div>
+
+<!-- STATUS -->
+<div class="status-bar" id="summary">
+    Status: -- loading --
+</div>
+
+<!-- OPERATION MESSAGE -->
+<div class="operation" id="gateMessage">
+    Message: <span>Welcome!!</span>
+</div>
+
+<!-- MAIN TABLE -->
+<div class="main">
+
+    <table class="parking-table">
+        <tr>
+
+            <td>
+                <div class="spot available" id="spot-1">
+                    <div class="spot-title">PARKING SPOT 1</div>
+                    <div class="status" id="spot-status-1">Available</div>
+                </div>
+            </td>
+
+            <td>
+                <div class="spot available" id="spot-2">
+                    <div class="spot-title">PARKING SPOT 2</div>
+                    <div class="status" id="spot-status-2">Available</div>
+                </div>
+            </td>
+
+        </tr>
+    </table>
+
+</div>
+
+<script>
+function updateClock() {
+    const now = new Date();
+    document.getElementById("date").innerText = now.toDateString();
+    document.getElementById("time").innerText = now.toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+<script>
+/* =========================
+   MQTT CONNECTION
+========================= */
+
+const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+
+client.on("connect", () => {
+    console.log("Connected to MQTT");
+
+    client.subscribe("parking/spot/status");
+    client.subscribe("parking/gate/event");
+});
+
+/* =========================
+   MESSAGE HANDLER
+========================= */
+
+let spotState = {
+    1: "available",
+    2: "available"
+};
+
+client.on("message", (topic, message) => {
+
+    const data = JSON.parse(message.toString());
+    console.log(data)
+
+    /* -------------------------
+       SPOT STATUS UPDATE
+    -------------------------- */
+    if (topic === "parking/spot/status") {
+
+        const id = data.spotId;
+        const status = data.status;
+
+        const spotDiv = document.getElementById(`spot-${id}`);
+        const spotText = document.getElementById(`spot-status-${id}`);
+
+        spotDiv.classList.remove("available", "occupied");
+        spotDiv.classList.add(status);
+
+        spotText.innerText = status.toUpperCase();
+
+        spotState[id] = status;
+
+        updateSummary();
+    }
+
+    /* -------------------------
+       GATE EVENT UPDATE
+    -------------------------- */
+    if (topic === "parking/gate/event") {
+
+        const gate = document.getElementById("gateMessage");
+
+        if (data.status === "AccessGranted") {
+            gate.innerText = "Gate Open — Please proceed";
+            gate.style.background = "#16a34a";
+              setTimeout(() => {
+                gate.innerText = "Welcome!!";
+                gate.style.background = "blue";
+            }, 5000);
+            
+        }
+
+        if (data.status === "AccessDenied") {
+            console.log("Access Denied: " + data.reason);
+            gate.innerText = `${data.reason} (Access Denied)`;
+             setTimeout(() => {
+                gate.innerText = "Parking Full!!";
+            }, 2000);
+            gate.style.background = "#dc2626";
+        }
+    }
+});
+
+/* =========================
+   SUMMARY UPDATE
+========================= */
+
+function updateSummary() {
+    const available = Object.values(spotState)
+        .filter(s => s === "available").length;
+
+    document.getElementById("summary").innerText =
+        `Status: ${available} of 2 spots available`;
+
+     const gate = document.getElementById("gateMessage");
+    
+    if(available == 0){
+        gate.innerText = "Parking Full";
+        gate.style.background = "#dc2626";
+    }else{
+        gate.innerText = "Welcome!!";
+        gate.style.background = "blue";
+    }
+}
+</script>
+
+</body>
+</html>
