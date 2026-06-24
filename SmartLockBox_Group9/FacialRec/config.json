@@ -1,0 +1,30 @@
+{
+  "active_model_pack": "buffalo_m",
+  "model_packs": {
+    "buffalo_s": {
+      "directory": "./buffalo_s",
+      "detector": "det_500m.onnx",
+      "recognizer": "w600k_mbf.onnx",
+      "database": "./data/faces_buffalo_s.npz"
+    },
+    "buffalo_m": {
+      "directory": "./buffalo_m",
+      "detector": "det_2.5g.onnx",
+      "recognizer": "w600k_r50.onnx",
+      "database": "./data/faces_buffalo_m.npz"
+    }
+  },
+  "spoof": {
+    "enabled": false,
+    "model": "./MiniFASNetV2.onnx",
+    "crop_scale": 2.7,
+    "live_class_index": 1,
+    "live_threshold": 0.6
+  },
+  "runtime": {
+    "detection_size": [640, 640],
+    "detection_threshold": 0.5,
+    "recognition_threshold": 0.45,
+    "camera_process_every": 3
+  }
+}

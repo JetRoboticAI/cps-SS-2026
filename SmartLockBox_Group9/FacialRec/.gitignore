@@ -1,0 +1,10 @@
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+data/
+output.jpg
+face_dbs/*
+!face_dbs/README.md
+image/*
+keys/*

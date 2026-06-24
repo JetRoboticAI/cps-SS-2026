@@ -1,0 +1,11 @@
+/.vscode
+/LockBox.zip
+/FacialRec/data/
+/FacialRec/output.jpg
+/FacialRec/face_dbs/*
+!/FacialRec/face_dbs/README.md
+/FacialRec/image/*
+/FacialRec/keys/*
+/FacialRec/.CPSProject
+/FacialRec/__pycache__
+*.onnx
