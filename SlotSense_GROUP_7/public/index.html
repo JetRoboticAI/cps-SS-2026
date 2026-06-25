@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlotSense MQTT Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">MQTT + InfluxDB Parking Control</p>
+        <h1>SlotSense Gate Monitor</h1>
+      </div>
+      <div class="broker-status">
+        <span class="status-light" id="nodeLight"></span>
+        <div>
+          <span>Raspberry Pi node</span>
+          <strong id="nodeState">offline</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="status-grid">
+      <article class="panel gate-panel">
+        <div class="panel-heading">
+          <span>Gate</span>
+          <strong id="gateBadge">Closed</strong>
+        </div>
+        <div class="gate-visual" id="gateVisual">
+          <div class="driveway"></div>
+          <div class="gate-arm" id="gateArm"></div>
+          <div class="car" id="carIcon"></div>
+        </div>
+        <div class="gate-copy">
+          <h2 id="gateTitle">Waiting for sensor data</h2>
+          <p id="gateReason">When a car is detected within range and a slot is available, the servo opens the gate.</p>
+        </div>
+        <div class="button-row">
+          <button id="openBtn" type="button">Force Open</button>
+          <button id="closeBtn" type="button">Force Close</button>
+          <button id="autoBtn" type="button">Auto</button>
+        </div>
+      </article>
+
+      <article class="panel slot-panel">
+        <div class="panel-heading">
+          <span>Parking Space</span>
+          <strong id="slotBadge">Waiting</strong>
+        </div>
+        <div class="space-indicator" id="spaceIndicator">
+          <span class="parking-lines"></span>
+          <span class="vehicle-shape"></span>
+        </div>
+        <dl class="metrics">
+          <div>
+            <dt>Spot Sensor</dt>
+            <dd><span id="distanceValue">--</span> cm</dd>
+          </div>
+          <div>
+            <dt>Gate Sensor</dt>
+            <dd><span id="gateDistanceValue">--</span> cm</dd>
+          </div>
+          <div>
+            <dt>LED</dt>
+            <dd id="ledState">--</dd>
+          </div>
+          <div>
+            <dt>Servo</dt>
+            <dd><span id="servoAngle">0</span> deg</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="panel flow-panel">
+        <div class="panel-heading">
+          <span>Data Flow</span>
+          <strong>Live</strong>
+        </div>
+        <div class="flow">
+          <div>Sensor</div>
+          <span></span>
+          <div>MQTT</div>
+          <span></span>
+          <div>Web</div>
+          <span></span>
+          <div>InfluxDB</div>
+        </div>
+        <p class="muted">The Node.js bridge subscribes to MQTT, updates this dashboard with Socket.IO, and writes slot/gate readings to InfluxDB when credentials are set.</p>
+      </article>
+
+      <article class="panel log-panel">
+        <div class="panel-heading">
+          <span>Activity</span>
+          <button id="clearLogBtn" type="button">Clear</button>
+        </div>
+        <ul id="activityLog">
+          <li>Waiting for MQTT messages.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

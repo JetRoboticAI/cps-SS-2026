@@ -1,0 +1,3 @@
+pubnub
+RPi.GPIO
+paho-mqtt>=1.6,<3

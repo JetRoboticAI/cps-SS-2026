@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlotSense InfluxDB Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --ink: #172033;
+      --muted: #64748b;
+      --panel: #fff;
+      --line: #d9e2ec;
+      --blue: #246bfe;
+      --green: #16a34a;
+      --red: #dc2626;
+      --shadow: 0 18px 50px rgba(23, 32, 51, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .status,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .status {
+      min-width: 250px;
+      padding: 14px 16px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .status strong {
+      display: block;
+      margin-top: 6px;
+      color: var(--ink);
+      font-size: 1.05rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      grid-column: span 6;
+      padding: 18px;
+    }
+
+    .panel.wide {
+      grid-column: 1 / -1;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .metric {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric div {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.35rem;
+    }
+
+    .ok {
+      color: var(--green);
+    }
+
+    .bad {
+      color: var(--red);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 820px) {
+      header,
+      .metric {
+        display: block;
+      }
+
+      .panel {
+        grid-column: 1 / -1;
+      }
+
+      .metric div,
+      .status {
+        margin-top: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <p class="eyebrow">InfluxDB 1.x Database</p>
+        <h1>SlotSense Influx Dashboard</h1>
+      </div>
+      <div class="status">
+        Database
+        <strong id="dbName">parking</strong>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-head">
+          <span>Latest Gate Record</span>
+          <span id="gateTime">--</span>
+        </div>
+        <div class="metric">
+          <div><span>State</span><strong id="gateState">--</strong></div>
+          <div><span>Distance</span><strong><span id="gateDistance">--</span> cm</strong></div>
+          <div><span>Servo</span><strong><span id="servoAngle">--</span> deg</strong></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <span>Latest Slot Record</span>
+          <span id="slotTime">--</span>
+        </div>
+        <div class="metric">
+          <div><span>State</span><strong id="slotState">--</strong></div>
+          <div><span>Distance</span><strong><span id="slotDistance">--</span> cm</strong></div>
+          <div><span>LED</span><strong id="ledState">--</strong></div>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <div class="panel-head">
+          <span>Recent Influx Points</span>
+          <span id="lastRefresh">--</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Measurement</th>
+              <th>Time</th>
+              <th>State</th>
+              <th>Distance</th>
+              <th>Servo</th>
+              <th>LED</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="7">Loading InfluxDB data...</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    function seriesRows(series) {
+      if (!series) return [];
+      const columns = series.columns || [];
+      return (series.values || []).map((values) => Object.fromEntries(columns.map((column, index) => [column, values[index]])));
+    }
+
+    function fmt(value, suffix = "") {
+      if (value === undefined || value === null) return "--";
+      return `${value}${suffix}`;
+    }
+
+    async function loadInflux() {
+      const response = await fetch("/api/influx/latest");
+      const payload = await response.json();
+      document.querySelector("#dbName").textContent = payload.database || "parking";
+      document.querySelector("#lastRefresh").textContent = new Date().toLocaleTimeString();
+
+      const results = payload.data?.results || [];
+      const gateRows = seriesRows(results[0]?.series?.[0]);
+      const slotRows = seriesRows(results[1]?.series?.[0]);
+      const latestGate = gateRows[0] || {};
+      const latestSlot = slotRows[0] || {};
+
+      document.querySelector("#gateTime").textContent = latestGate.time ? new Date(latestGate.time).toLocaleTimeString() : "--";
+      document.querySelector("#gateState").textContent = fmt(latestGate.state);
+      document.querySelector("#gateState").className = latestGate.state === "open" ? "ok" : "bad";
+      document.querySelector("#gateDistance").textContent = fmt(latestGate.gate_distance_cm);
+      document.querySelector("#servoAngle").textContent = fmt(latestGate.servo_angle);
+
+      document.querySelector("#slotTime").textContent = latestSlot.time ? new Date(latestSlot.time).toLocaleTimeString() : "--";
+      document.querySelector("#slotState").textContent = fmt(latestSlot.state);
+      document.querySelector("#slotState").className = latestSlot.space_available ? "ok" : "bad";
+      document.querySelector("#slotDistance").textContent = fmt(latestSlot.spot_distance_cm ?? latestSlot.distance_cm);
+      document.querySelector("#ledState").textContent = latestSlot.led_on ? "On" : "Off";
+
+      const combined = [
+        ...gateRows.map((row) => ({ measurement: "parking_gate", ...row })),
+        ...slotRows.map((row) => ({ measurement: "parking_slot", ...row })),
+      ].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+      document.querySelector("#rows").innerHTML = combined.map((row) => `
+        <tr>
+          <td>${row.measurement}</td>
+          <td>${new Date(row.time).toLocaleTimeString()}</td>
+          <td>${fmt(row.state)}</td>
+          <td>${fmt(row.gate_distance_cm ?? row.spot_distance_cm ?? row.distance_cm)}</td>
+          <td>${fmt(row.servo_angle)}</td>
+          <td>${row.led_on === undefined ? "--" : row.led_on ? "On" : "Off"}</td>
+          <td>${fmt(row.reason)}</td>
+        </tr>
+      `).join("");
+    }
+
+    loadInflux();
+    setInterval(loadInflux, 5000);
+  </script>
+</body>
+</html>
