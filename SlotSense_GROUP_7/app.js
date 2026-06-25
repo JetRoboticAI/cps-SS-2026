@@ -1,8 +1,3 @@
-const pubnubConfig = {
-  subscribeKey: "sub-c-d2cf210c-9365-4938-ac72-9627d63ef60d",
-  publishKey: "pub-c-3a406da1-b0a2-4010-b78f-2334b59a131d",
-  uuid: `parksphere-ui-${Math.random().toString(16).slice(2, 10)}`,
-};
 
 const channel = "group_7";
 const state = {
